@@ -1,0 +1,27 @@
+version: "3.7"
+services:
+  portal:
+    env_file:
+      - .env
+    image: jhawk7/portal:latest
+    build: .
+    ports:
+      - 8888:8888
+    depends_on:
+      - surrealdb
+    
+  surrealdb:
+    env_file:
+      - .env
+    entrypoint: 
+      - /surreal 
+      - start 
+      - --user
+      - $DB_USER
+      - --pass
+      - $DB_PASSWORD
+    image: surrealdb/surrealdb:latest
+    ports:
+      - 8000:800
+    # volumes:
+    #   - ./mydata:/mydata
