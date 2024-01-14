@@ -2,6 +2,7 @@ package db
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -35,7 +36,7 @@ type UpdatePortal struct {
 		RedirectUrl string `json:"redirectUrl,omitempty"`
 		Img         string `json:"img,omitempty"`
 		Count       int    `json:"count,omitempty"`
-	}
+	} `json:"changes"`
 }
 
 func InitDB() (dbClient *DBClient, err error) {
@@ -64,14 +65,20 @@ func InitDB() (dbClient *DBClient, err error) {
 	return
 }
 
-func (dbClient *DBClient) GetAllPortals() (portals *[]Portal, err error) {
+func (dbClient *DBClient) GetAllPortals() (portals *[]Portal, notFound bool, err error) {
 	data, dbErr := dbClient.svc.Select(DB_NAME)
 	if dbErr != nil {
 		err = fmt.Errorf("failed to retreive portals from db; %v", dbErr)
 		return
 	}
 
-	if mErr := surrealdb.Unmarshal(data, portals); mErr != nil {
+	if data == nil {
+		err = errors.New("no data")
+		notFound = true
+		return
+	}
+
+	if mErr := surrealdb.Unmarshal(data, &portals); mErr != nil {
 		err = fmt.Errorf("failed to marshal db response to struct; [func: GetAllPortals]; %v", mErr)
 		return
 	}
@@ -79,7 +86,7 @@ func (dbClient *DBClient) GetAllPortals() (portals *[]Portal, err error) {
 	return
 }
 
-func (dbClient *DBClient) InsertPortal(portal Portal) (portalID string, err error) {
+func (dbClient *DBClient) InsertPortal(portal *Portal) (portalID string, err error) {
 	id := fmt.Sprintf("%v:%v", SELECTOR, portal.Name)
 	data, dbErr := dbClient.svc.Create(id, portal)
 	if dbErr != nil {
@@ -88,7 +95,7 @@ func (dbClient *DBClient) InsertPortal(portal Portal) (portalID string, err erro
 	}
 
 	newPortal := new(Portal)
-	if mErr := surrealdb.Unmarshal(data, newPortal); mErr != nil {
+	if mErr := surrealdb.Unmarshal(data, &newPortal); mErr != nil {
 		err = fmt.Errorf("failed to marshal db response to struct; [func: InsertPortal]; %v", mErr)
 		return
 	}
@@ -98,7 +105,7 @@ func (dbClient *DBClient) InsertPortal(portal Portal) (portalID string, err erro
 	return
 }
 
-func (dbClient *DBClient) ModifyPortal(update UpdatePortal) (portal Portal, notFound bool, err error) {
+func (dbClient *DBClient) ModifyPortal(update *UpdatePortal) (portal Portal, notFound bool, err error) {
 	changes, convErr := struct2map(update.Changes)
 	if convErr != nil {
 		err = fmt.Errorf("failed to convert struct to map during update; [func: ModifyPortal - struct2map]; %v", convErr)

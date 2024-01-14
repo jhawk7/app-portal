@@ -12,7 +12,7 @@ const Portal = ({portal, updateCount, handleRedirect}: PortalProps) => {
     <>
       <div className="card" 
         onClick={() => {
-          updateCount(portal.id, portal.count); 
+          updateCount(portal.id, portal.count++); 
           handleRedirect(portal.redirectUrl)
         }}>
         <img src={portal.img} className="card-img-top" alt={portal.name + ' image'}></img>

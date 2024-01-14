@@ -29,7 +29,21 @@ const App = () => {
 
   const updateCount = (id: string, count: number) => {
     //PATCH api call to update count
-    console.log(id, count);
+    fetch("/portal", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        "id": id,
+        "changes": {
+          "count": count
+        }
+      })
+    })
+    .catch((e) => {
+      console.log(e)
+    });
   }
 
   useEffect(getPortals, [])
